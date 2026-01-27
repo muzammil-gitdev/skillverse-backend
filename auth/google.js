@@ -1,5 +1,6 @@
 const passport = require("passport");
 var GoogleStrategy = require("passport-google-oauth20").Strategy;
+const User = require("../Models/User");
 require("dotenv").config();
 
 passport.use(
@@ -10,25 +11,35 @@ passport.use(
       callbackURL: process.env.CALLBACK_URL,
     },
     //profile info in profile var
-    function (accessToken, refreshToken, profile, done) {
-      console.log("====== GOOGLE USER DATA ======");
-      console.log("ID:", profile.id);
-      console.log("Display Name:", profile.displayName);
-      console.log("First Name:", profile.name?.givenName);
-      console.log("Last Name:", profile.name?.familyName);
-      console.log("Emails:", profile.emails);
-      console.log("Photos:", profile.photos);
-      console.log("Raw Profile:", JSON.stringify(profile, null, 2));
-      console.log("==============================");
-      return done(null, profile);
+    async (accessToken, refreshToken, profile, done) => {
+      try {
+        const email = profile.emails[0].value;
+        const name = profile.displayName;
+
+        let user = await User.findOne({ email });
+
+        if (!user) {
+          user = await User.create({
+            name,
+            email,
+            authProvider: "google",
+          });
+          await user.save();
+        }
+
+        return done(null, user);
+      } catch (err) {
+        return done(err, null);
+      }
     },
   ),
 );
 
 passport.serializeUser((user, done) => {
-  done(null, user);
+  done(null, user.id);
 });
 
-passport.deserializeUser((user, done) => {
+passport.deserializeUser(async (id, done) => {
+  const user = await User.findById(id);
   done(null, user);
 });

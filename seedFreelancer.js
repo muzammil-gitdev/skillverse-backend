@@ -1,7 +1,6 @@
 const mongoose = require("mongoose");
 const Freelancer = require("./Models/freelancer");
 const connectDB = require("./Config/db");
-
 const sampleFreelancers = [
   {
     name: "John Doe",
